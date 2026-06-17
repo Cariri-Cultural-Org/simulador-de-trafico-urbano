@@ -1,11 +1,12 @@
-#include "relogio_global.h"
+#include "Relogio_global.h"
 
 int global_tick = 0;
 os_mutex_t clock_mutex;
 os_cond_t clock_cond;
 bool simulation_running = true;
 
-void init_relogio() {
+void init_relogio()
+{
     global_tick = 0;
     simulation_running = true;
 #ifdef _WIN32
@@ -18,14 +19,17 @@ void init_relogio() {
 }
 
 #ifdef _WIN32
-DWORD WINAPI thread_relogio(LPVOID arg) {
+DWORD WINAPI thread_relogio(LPVOID arg)
+{
 #else
-void* thread_relogio(void* arg) {
+void *thread_relogio(void *arg)
+{
 #endif
 #ifdef _WIN32
     (void)arg; // suppress warning
 #endif
-    while (simulation_running) {
+    while (simulation_running)
+    {
         // Pausa simulando a passagem de tempo de 1 tick (ex: 100ms)
 #ifdef _WIN32
         Sleep(100);
@@ -36,7 +40,7 @@ void* thread_relogio(void* arg) {
 #endif
 
         global_tick++; // Atualiza o tick
-        
+
 #ifdef _WIN32
         LeaveCriticalSection(&clock_mutex);
         PulseEvent(clock_cond); // Dispara evento simulando Broadcast
@@ -48,11 +52,14 @@ void* thread_relogio(void* arg) {
     return 0;
 }
 
-void esperar_proximo_tick(int tick_atual) {
+void esperar_proximo_tick(int tick_atual)
+{
 #ifdef _WIN32
-    while (simulation_running) {
+    while (simulation_running)
+    {
         EnterCriticalSection(&clock_mutex);
-        if (global_tick != tick_atual) {
+        if (global_tick != tick_atual)
+        {
             LeaveCriticalSection(&clock_mutex);
             break;
         }
@@ -62,14 +69,16 @@ void esperar_proximo_tick(int tick_atual) {
 #else
     pthread_mutex_lock(&clock_mutex);
     // Variavel de condicao: dorme sem gastar CPU ate chegar o Broadcast do relogio
-    while (global_tick == tick_atual && simulation_running) {
+    while (global_tick == tick_atual && simulation_running)
+    {
         pthread_cond_wait(&clock_cond, &clock_mutex);
     }
     pthread_mutex_unlock(&clock_mutex);
 #endif
 }
 
-void destroy_relogio() {
+void destroy_relogio()
+{
 #ifdef _WIN32
     DeleteCriticalSection(&clock_mutex);
     CloseHandle(clock_cond);
