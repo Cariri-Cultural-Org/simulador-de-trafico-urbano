@@ -25,8 +25,8 @@ typedef struct
     DirecaoVia direcao;
     SentidoVia sentido;
 
-    Celula **celulas; // vertor de células
-    Cruzamento **cruzamentos; // vetor de cruzamentos
+    Celula **celulas; // matriz de células
+    Cruzamento *cruzamentos; // vetor de cruzamentos
     int num_celulas;
 } Via;
 

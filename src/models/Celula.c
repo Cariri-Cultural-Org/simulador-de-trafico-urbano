@@ -1,17 +1,13 @@
 #include <stdlib.h>
 #include "Celula.h"
 
-Celula *celula_init(int linha, int coluna)
+void celula_init(Celula *c, int linha, int coluna)
 {
-    Celula *c = malloc(sizeof(Celula));
-    if (c == NULL)
-        return NULL;
     c->linha = linha;
     c->coluna = coluna;
     c->ocupada = 0;
     c->veiculo = NULL;
     pthread_mutex_init(&c->mutex, NULL);
-    return c;
 }
 
 void celula_destroy(Celula *c)

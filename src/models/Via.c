@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "Via.h"
+#include "Cruzamento.h"
 
 Via *via_criar(int id, DirecaoVia direcao, SentidoVia sentido, int num_celulas)
 {
@@ -20,7 +21,7 @@ Via *via_criar(int id, DirecaoVia direcao, SentidoVia sentido, int num_celulas)
         return NULL;
     }
 
-    v->cruzamentos = calloc(num_celulas, sizeof(Cruzamento *));
+    v->cruzamentos = calloc(num_celulas, sizeof(Cruzamento));
     if (!v->cruzamentos)
     {
         free(v->celulas); // também libera as células antes de destruir a via
@@ -57,5 +58,5 @@ Cruzamento *via_get_cruzamento(const Via *v, int indice)
     if (!v || indice < 0 || indice >= v->num_celulas)
         return NULL;
 
-    return v->cruzamentos[indice];
+    return &v->cruzamentos[indice];
 }
