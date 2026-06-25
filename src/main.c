@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "veiculo.h"
 #include "models/Relogio_global.h"
 #include "models/Semaforo.h"
 
@@ -31,6 +32,17 @@ int main()
     pthread_create(&thread_id, NULL, thread_relogio, NULL);
 #endif
 
+    // 4. Exemplo de veículo com thread própria
+    Posicao rota_teste[] = {{0, 1}, {0, 2}, {0, 3}};
+    Veiculo veiculo_teste;
+    veiculo_init(&veiculo_teste, 1, TIPO_CARRO,
+                 (Posicao){0, 0}, DIR_LESTE,
+                 VEL_RAPIDO, rota_teste, 3);
+
+    if (veiculo_iniciar(&veiculo_teste) != 0) {
+        fprintf(stderr, "Falha ao iniciar a thread do veículo.\n");
+    }
+
     // Loop principal da simulação para fins de teste
     // Vamos simular por 10 ticks e depois encerrar
     for (int i = 1; i <= 10; i++)
@@ -61,7 +73,10 @@ int main()
     pthread_join(thread_id, NULL);
 #endif
 
-    // 6. Limpa os recursos da memória
+    // 6. Aguarda a thread do veículo finalizar
+    veiculo_aguardar(&veiculo_teste);
+
+    // 7. Limpa os recursos da memória
     destroy_semaforo(&sem1);
     destroy_relogio();
 
