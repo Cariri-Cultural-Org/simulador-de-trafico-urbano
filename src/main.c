@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include "vehicle_thread.h"
+#include <stdbool.h>
 #include "models/GlobalClock.h"
-#include "models/TrafficLight.h"
+#include "models/CityMap.h"
 
-// Inclusões para gerenciar a thread inicial na main (dependente do SO)
+/* Inclusões de thread dependentes do SO */
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -11,75 +11,62 @@
 #include <unistd.h>
 #endif
 
-int main()
+int main(void)
 {
     printf("--- Starting the Urban Traffic Simulator ---\n");
 
-    // 1. Inicializa o relógio global
+    /* ── M0-C: Criar o CityMap real ─────────────────────────────────────── */
+    CityMap *city_map = city_map_create();
+    if (!city_map)
+    {
+        fprintf(stderr, "ERRO: Falha ao criar o CityMap.\n");
+        return 1;
+    }
+
+    printf("Mapa criado: %d linhas x %d colunas\n",
+           city_map->rows, city_map->columns);
+    printf("Vias: %d  |  Cruzamentos: %d\n",
+           city_map->road_count, city_map->intersection_count);
+
+    /* ── Inicializa o relógio global ────────────────────────────────────── */
     init_global_clock();
 
-    // 2. Inicializa um semáforo de teste
-    TrafficLight traffic_light;
-    // Semáforo ID 1 | 3 ticks no GREEN | 3 ticks no RED
-    init_traffic_light(&traffic_light, 1, 3, 3);
-
-    // 3. Cria e inicia a thread do relógio
-    os_thread_t thread_id;
-
+    /* Cria a thread do relógio */
+    os_thread_t clock_thread;
 #ifdef _WIN32
-    thread_id = CreateThread(NULL, 0, thread_global_clock, NULL, 0, NULL);
+    clock_thread = CreateThread(NULL, 0, thread_global_clock, NULL, 0, NULL);
 #else
-    pthread_create(&thread_id, NULL, thread_global_clock, NULL);
+    pthread_create(&clock_thread, NULL, thread_global_clock, NULL);
 #endif
 
-    // 4. Exemplo de veículo com thread própria
-    Position test_route[] = {{0, 1}, {0, 2}, {0, 3}};
-    ThreadVehicle test_vehicle;
-    thread_vehicle_init(&test_vehicle, 1, VEHICLE_TYPE_CAR,
-                        (Position){0, 0}, DIRECTION_EAST,
-                        SPEED_FAST, test_route, 3);
-
-    if (thread_vehicle_start(&test_vehicle) != 0) {
-        fprintf(stderr, "Failed to start the vehicle thread.\n");
-    }
-
-    // Loop principal da simulação para fins de teste
-    // Vamos simular por 10 ticks e depois encerrar
-    for (int i = 1; i <= 10; i++)
+    /* ── Loop de simulação (5 ticks de demonstração) ────────────────────── */
+    for (int i = 1; i <= 5; i++)
     {
-        // Pausa a thread principal até o relógio "bater" o próximo tick
         wait_next_tick(global_tick);
-
-        // Assim que o tick vira, atualizamos o semáforo
-        update_traffic_light(&traffic_light);
-
-        // Imprime o estado atual
-        printf("[Tick: %02d] Traffic light %d is: %s\n",
+        printf("[Tick: %02d] Simulador ativo — mapa %dx%d, %d cruzamentos\n",
                global_tick,
-               traffic_light.id,
-               traffic_light.state == GREEN ? "GREEN" : "RED");
+               city_map->rows, city_map->columns,
+               city_map->intersection_count);
     }
 
-    printf("\nStopping the simulation...\n");
+    printf("\nEncerrando simulação...\n");
 
-    // 4. Sinaliza para a thread do relógio parar
+    /* ── Finaliza o relógio ─────────────────────────────────────────────── */
     simulation_running = false;
 
-    // 5. Aguarda a thread do relógio finalizar com segurança
 #ifdef _WIN32
-    WaitForSingleObject(thread_id, INFINITE);
-    CloseHandle(thread_id);
+    WaitForSingleObject(clock_thread, INFINITE);
+    CloseHandle(clock_thread);
 #else
-    pthread_join(thread_id, NULL);
+    pthread_join(clock_thread, NULL);
 #endif
 
-    // 6. Aguarda a thread do veículo finalizar
-    thread_vehicle_join(&test_vehicle);
-
-    // 7. Limpa os recursos da memória
-    destroy_traffic_light(&traffic_light);
     destroy_global_clock();
 
-    printf("Cleanup completed. Exiting the simulator.\n");
+    /* ── M0-A / M0-C: Destruir o CityMap sem invalid free ──────────────── */
+    city_map_destroy(city_map);
+    city_map = NULL;
+
+    printf("Cleanup concluído. Saindo do simulador.\n");
     return 0;
 }
