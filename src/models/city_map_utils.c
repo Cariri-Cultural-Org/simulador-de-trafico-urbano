@@ -3,6 +3,7 @@
 #include "Intersection.h"
 #include "CityMap.h"
 #include "Road.h"
+#include "Cell.h"
 
 /* Linhas onde existem vias horizontais e seus sentidos */
 static const int HORIZONTAL_ROAD_ROWS[] = {4, 10, 16};
@@ -30,7 +31,9 @@ static const RoadType VERTICAL_ROAD_TYPES[] = {
 #define TOTAL_ROAD_COUNT (HORIZONTAL_ROAD_COUNT + VERTICAL_ROAD_COUNT)
 #define INTERSECTION_COUNT (HORIZONTAL_ROAD_COUNT * VERTICAL_ROAD_COUNT)
 
-static void release_intersections(CityMap *city_map)
+/* ── Funções de liberação ──────────────────────────────────────────────────── */
+
+void release_intersections(CityMap *city_map)
 {
     if (!city_map || !city_map->intersections) return;
 
@@ -39,6 +42,7 @@ static void release_intersections(CityMap *city_map)
         if (city_map->intersections[i])
         {
             intersection_destroy(city_map->intersections[i]);
+            city_map->intersections[i] = NULL;
         }
     }
 
@@ -46,7 +50,7 @@ static void release_intersections(CityMap *city_map)
     city_map->intersections = NULL;
 }
 
-static void release_cells(CityMap *city_map, int allocated_rows)
+void release_cells(CityMap *city_map, int allocated_rows)
 {
     if (!city_map || !city_map->cells) return;
 
@@ -60,6 +64,7 @@ static void release_cells(CityMap *city_map, int allocated_rows)
             }
 
             free(city_map->cells[row]);
+            city_map->cells[row] = NULL;
         }
     }
 
@@ -67,31 +72,42 @@ static void release_cells(CityMap *city_map, int allocated_rows)
     city_map->cells = NULL;
 }
 
-static void release_roads(CityMap *city_map)
+void release_roads(CityMap *city_map)
 {
     if (!city_map || !city_map->roads) return;
 
     for (int i = 0; i < city_map->road_count; i++)
     {
-        road_destroy(city_map->roads[i]);
+        if (city_map->roads[i])
+        {
+            road_destroy(city_map->roads[i]);
+            city_map->roads[i] = NULL;
+        }
     }
 
     free(city_map->roads);
     city_map->roads = NULL;
 }
 
-static int allocate_cells(CityMap *city_map)
+/* ── Funções de alocação ───────────────────────────────────────────────────── */
+
+int allocate_cells(CityMap *city_map)
 {
     if (!city_map) return 0;
 
     city_map->cells = malloc(city_map->rows * sizeof(Cell *));
     if (!city_map->cells) return 0;
 
+    /* Inicializa ponteiros a NULL para que release_cells seja seguro em falha parcial */
+    for (int row = 0; row < city_map->rows; row++)
+        city_map->cells[row] = NULL;
+
     for (int row = 0; row < city_map->rows; row++)
     {
         city_map->cells[row] = malloc(city_map->columns * sizeof(Cell));
         if (!city_map->cells[row])
         {
+            /* Libera apenas as linhas já alocadas */
             release_cells(city_map, row);
             return 0;
         }
@@ -132,7 +148,7 @@ static int city_map_init_roads(CityMap *city_map, RoadDirection direction)
 
         for (int cell = 0; cell < cell_count; cell++)
         {
-            int row = (direction == ROAD_HORIZONTAL) ? position : cell;
+            int row    = (direction == ROAD_HORIZONTAL) ? position : cell;
             int column = (direction == ROAD_HORIZONTAL) ? cell : position;
 
             city_map->roads[offset + index]->cells[cell] = &city_map->cells[row][column];
@@ -142,7 +158,7 @@ static int city_map_init_roads(CityMap *city_map, RoadDirection direction)
     return 1;
 }
 
-static int allocate_roads(CityMap *city_map)
+int allocate_roads(CityMap *city_map)
 {
     if (!city_map) return 0;
 
@@ -159,7 +175,7 @@ static int allocate_roads(CityMap *city_map)
     return 1;
 }
 
-static int allocate_intersections(CityMap *city_map)
+int allocate_intersections(CityMap *city_map)
 {
     if (!city_map) return 0;
 
@@ -175,7 +191,7 @@ static int allocate_intersections(CityMap *city_map)
         for (int j = 0; j < VERTICAL_ROAD_COUNT; j++)
         {
             Road *horizontal_road = city_map->roads[i];
-            Road *vertical_road = city_map->roads[HORIZONTAL_ROAD_COUNT + j];
+            Road *vertical_road   = city_map->roads[HORIZONTAL_ROAD_COUNT + j];
 
             Intersection *intersection = intersection_create(
                 intersection_id,
@@ -189,7 +205,7 @@ static int allocate_intersections(CityMap *city_map)
 
             city_map->intersections[intersection_id] = intersection;
             horizontal_road->intersections[VERTICAL_ROAD_COLUMNS[j]] = intersection;
-            vertical_road->intersections[HORIZONTAL_ROAD_ROWS[i]] = intersection;
+            vertical_road->intersections[HORIZONTAL_ROAD_ROWS[i]]    = intersection;
 
             intersection_id++;
         }

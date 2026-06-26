@@ -1,12 +1,13 @@
 #include <stdlib.h>
-#include "city_map_utils.c"
+#include "CityMap.h"
+#include "city_map_utils.h"
 
 CityMap *city_map_create(void)
 {
     CityMap *city_map = calloc(1, sizeof(CityMap));
     if (!city_map) return NULL;
 
-    city_map->rows = CITY_MAP_ROWS;
+    city_map->rows    = CITY_MAP_ROWS;
     city_map->columns = CITY_MAP_COLUMNS;
 
     if (!allocate_cells(city_map))
@@ -34,8 +35,9 @@ void city_map_destroy(CityMap *city_map)
 {
     if (!city_map) return;
     if (city_map->intersections) release_intersections(city_map);
-    if (city_map->roads) release_roads(city_map);
-    if (city_map->cells) release_cells(city_map, city_map->rows);
+    if (city_map->roads)         release_roads(city_map);
+    if (city_map->cells)         release_cells(city_map, city_map->rows);
+
     free(city_map);
 }
 
