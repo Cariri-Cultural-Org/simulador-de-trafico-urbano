@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares a synchronized city cell and safe occupancy operations.
+ */
 #ifndef CELL_H
 #define CELL_H
 

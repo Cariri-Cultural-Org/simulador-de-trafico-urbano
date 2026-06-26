@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Implements signal switching, blocking waits, and ambulance priority.
+ */
 #include <stdlib.h>
 
 #include "GlobalClock.h"

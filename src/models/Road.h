@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares roads as ordered lists of shared city cells.
+ */
 #ifndef ROAD_H
 #define ROAD_H
 

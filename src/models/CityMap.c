@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Creates, queries, and destroys the shared city map.
+ */
 #include <stdlib.h>
 
 #include "city_map_utils.c"

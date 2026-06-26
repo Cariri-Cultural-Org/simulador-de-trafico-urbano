@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares the city grid that owns cells, roads, and intersections.
+ */
 #ifndef CITY_MAP_H
 #define CITY_MAP_H
 

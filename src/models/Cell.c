@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Implements cell locking, occupancy, release, and safe cell-to-cell movement.
+ */
 #include "Cell.h"
 
 void cell_init(Cell *cell, int row, int col)

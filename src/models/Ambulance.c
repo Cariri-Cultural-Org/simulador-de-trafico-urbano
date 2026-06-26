@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Marks a vehicle as an ambulance and runs the shared vehicle worker.
+ */
 #include "Ambulance.h"
 
 void *ambulance_thread(void *arg)

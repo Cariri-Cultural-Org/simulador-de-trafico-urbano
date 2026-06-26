@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Moves vehicle threads through roads while respecting cells and signals.
+ */
 #include "CityMap.h"
 #include "GlobalClock.h"
 #include "Intersection.h"

@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares a standalone traffic light model used for simple timing logic.
+ */
 #ifndef TRAFFIC_LIGHT_H
 #define TRAFFIC_LIGHT_H
 

@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Builds and tears down the fixed road and intersection layout.
+ */
 #include <stdlib.h>
 
 #include "CityMap.h"

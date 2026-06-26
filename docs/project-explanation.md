@@ -13,7 +13,7 @@ create CityMap
 initialize vehicles
 start GlobalClock thread
 start vehicle threads
-repeat for 80 ticks:
+repeat for five minutes:
     update intersection signals
     render the terminal snapshot
 stop simulation
@@ -64,7 +64,7 @@ ROAD_HORIZONTAL -> horizontal vehicles may enter
 ROAD_VERTICAL   -> vertical vehicles may enter
 ```
 
-Vehicle threads wait on condition variables when the signal is red. The main thread toggles all intersection signals every five ticks.
+Vehicle threads wait on condition variables when the signal is red. The main thread toggles all intersection signals every 30 ticks.
 
 ## Vehicles
 
@@ -72,10 +72,11 @@ Each vehicle runs in its own thread. A vehicle waits for the global clock, check
 
 Speed is represented as ticks per movement:
 
-- `1`: move every tick;
-- `2`: move every second tick;
-- `3`: move every third tick;
-- `4`: move every fourth tick.
+- `5`: ambulance movement every fifth tick;
+- `8`: normal car movement every eighth tick;
+- `10`: normal car movement every tenth tick;
+- `12`: normal car movement every twelfth tick;
+- `15`: normal car movement every fifteenth tick.
 
 The ambulance is a normal `Vehicle` with `is_ambulance = 1`. When it approaches an intersection, it requests priority and sets the signal green for its direction.
 

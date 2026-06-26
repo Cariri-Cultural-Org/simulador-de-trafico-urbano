@@ -7,8 +7,10 @@
 #include "models/GlobalClock.h"
 #include "models/Vehicle.h"
 
-#define SIMULATION_TICKS 80
-#define SIGNAL_PERIOD_TICKS 5
+#define TICKS_PER_SECOND 10
+#define SIMULATION_MINUTES 5
+#define SIMULATION_TICKS (SIMULATION_MINUTES * 60 * TICKS_PER_SECOND)
+#define SIGNAL_PERIOD_TICKS 30
 #define VEHICLE_COUNT 14
 
 static int is_road_cell(CityMap *city, const Cell *cell, RoadOrientation orientation)
@@ -76,7 +78,7 @@ static char cell_marker(CityMap *city, Cell *cell)
 static void render_city(CityMap *city, int tick)
 {
     printf("\033[H\033[J");
-    printf("Urban Traffic Simulator MVP | tick %02d/%d\n", tick, SIMULATION_TICKS);
+    printf("Urban Traffic Simulator MVP | tick %04d/%d\n", tick, SIMULATION_TICKS);
     printf("Legend: C car | A ambulance | H horizontal green | V vertical green\n\n");
 
     pthread_mutex_lock(&city->state_mutex);
@@ -107,7 +109,7 @@ static void wake_all_intersections(CityMap *city)
 
 static void initialize_vehicles(CityMap *city, Vehicle vehicles[VEHICLE_COUNT])
 {
-    const int speeds[] = {1, 2, 3, 4};
+    const int speeds[] = {8, 10, 12, 15};
 
     for (int i = 0; i < VEHICLE_COUNT; i++)
     {
@@ -125,7 +127,7 @@ static void initialize_vehicles(CityMap *city, Vehicle vehicles[VEHICLE_COUNT])
     }
 
     vehicle_set_ambulance(&vehicles[0], 1);
-    vehicles[0].speed = 1;
+    vehicles[0].speed = 5;
 }
 
 static int start_vehicle_threads(Vehicle vehicles[VEHICLE_COUNT])

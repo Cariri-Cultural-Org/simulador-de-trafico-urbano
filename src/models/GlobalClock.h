@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares the global tick clock used to synchronize all threads.
+ */
 #ifndef GLOBAL_CLOCK_H
 #define GLOBAL_CLOCK_H
 

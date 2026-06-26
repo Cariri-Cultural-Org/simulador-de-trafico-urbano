@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Updates a standalone traffic light between red and green states.
+ */
 #include "TrafficLight.h"
 
 void traffic_light_init(TrafficLight *light, int id, int green_ticks, int red_ticks)

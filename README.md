@@ -80,11 +80,11 @@ clock thread sleeps
     -> vehicle threads wake and try one step
 ```
 
-The executable runs for `SIMULATION_TICKS` ticks, currently set to 80 in `src/main.c`.
+The executable runs for five minutes by default: `SIMULATION_TICKS` is 3000 at 10 ticks per second.
 
 ## Vehicle Threads
 
-Each `Vehicle` stores its current road, cell index, position, speed, and thread handle. The speed value means "ticks per movement": speed 1 moves every tick, speed 2 moves every second tick, and so on.
+Each `Vehicle` stores its current road, cell index, position, speed, and thread handle. The speed value means "ticks per movement": speed 8 moves every eighth tick, speed 10 moves every tenth tick, and so on. The default cars use slower speeds from 8 to 15 ticks per movement, while the ambulance uses 5.
 
 Movement is synchronized in this order:
 
@@ -176,7 +176,7 @@ make
 ./bin/traffic-simulator
 ```
 
-A successful run ends with:
+A successful full run takes about five minutes and ends with:
 
 ```text
 Simulation finished cleanly.

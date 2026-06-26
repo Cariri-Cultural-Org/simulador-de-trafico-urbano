@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Allocates, destroys, and reads road cell/intersection references.
+ */
 #include <stdlib.h>
 
 #include "Intersection.h"

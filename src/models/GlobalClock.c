@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Runs the global clock thread and wakes workers on each tick.
+ */
 #include <time.h>
 
 #include "GlobalClock.h"

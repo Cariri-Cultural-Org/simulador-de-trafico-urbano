@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares traffic intersections, signal state, and ambulance priority.
+ */
 #ifndef INTERSECTION_H
 #define INTERSECTION_H
 

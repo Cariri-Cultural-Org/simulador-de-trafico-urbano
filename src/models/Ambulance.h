@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares the ambulance worker entry point.
+ */
 #ifndef AMBULANCE_H
 #define AMBULANCE_H
 

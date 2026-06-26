@@ -29,7 +29,7 @@ make
 Expected result:
 
 - the project compiles without warnings;
-- the terminal renders 80 ticks;
+- the terminal renders about five minutes of simulation, or 3000 ticks;
 - the process ends with `Simulation finished cleanly.`;
 - no worker thread remains blocked at shutdown.
 

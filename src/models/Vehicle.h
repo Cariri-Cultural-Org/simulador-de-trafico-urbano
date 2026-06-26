@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Declares vehicles, their thread state, speed, and current position.
+ */
 #ifndef VEHICLE_H
 #define VEHICLE_H
 

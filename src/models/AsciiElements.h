@@ -1,3 +1,7 @@
+/*
+ * What it does?
+ * Defines the ASCII symbols used by the terminal renderer.
+ */
 #ifndef ASCII_ELEMENTS_H
 #define ASCII_ELEMENTS_H
 
