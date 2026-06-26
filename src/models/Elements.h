@@ -1,11 +1,11 @@
 /*
- * elements_ascii.h
+ * Elements.h
  * ─────────────────────────────────────────────────────────────────
  * Simulador de Tráfego Urbano — Sistemas Operacionais
  * Protótipo visual em ASCII: todos os elementos gráficos do projeto.
  *
  * Como usar:
- *   #include "elements_ascii.h"
+ *   #include "Elements.h"
  *
  * Convenções:
  *   - Semáforo VERMELHO  → [R]   (Red   — via fechada)
@@ -24,14 +24,14 @@
  * 1. Células Básicas Do Mapa
  */
 
-#define CELULA_RUA_H        "═══"   /* Rua horizontal               */
-#define CELULA_RUA_V        " │ "   /* Rua vertical                 */
-#define CELULA_CRUZAMENTO   "─┼─"   /* Interseção de vias           */
-#define CELULA_VAZIA        "   "   /* Espaço sem via               */
-#define CELULA_CALCADA      "▒▒▒"   /* Calçada / faixa de pedestre  */
-#define CELULA_EDIFICIO     "███"   /* Bloco de edifício            */
-#define CELULA_PARQUE       " T "   /* Área verde (T = árvore)      */
-#define CELULA_CASA         "_H_"   /* Zona residencial             */
+#define CELL_ROAD_H         "═══"   /* Rua horizontal               */
+#define CELL_ROAD_V         " │ "   /* Rua vertical                 */
+#define CELL_INTERSECTION   "─┼─"   /* Interseção de vias           */
+#define CELL_EMPTY          "   "   /* Espaço sem via               */
+#define CELL_SIDEWALK       "▒▒▒"   /* Calçada / faixa de pedestre  */
+#define CELL_BUILDING       "███"   /* Bloco de edifício            */
+#define CELL_PARK           " T "   /* Área verde (T = árvore)      */
+#define CELL_HOUSE          "_H_"   /* Zona residencial             */
 
 
 /*
@@ -39,17 +39,17 @@
  */
 
 /* Mão única — fluxo para Oeste (esquerda) */
-#define FAIXA_OESTE     " << Faixa Unica (Oeste) << "
+#define WEST_LANE       " << One-way Lane (West) << "
 
 /* Mão dupla — faixa sentido Leste */
-#define FAIXA_LESTE_N   " >> Faixa Norte >> "   /* faixa de cima */
-#define FAIXA_LESTE_S   " >> Faixa Sul   >> "   /* faixa de baixo */
+#define EAST_NORTH_LANE " >> North Lane >> "   /* faixa de cima */
+#define EAST_SOUTH_LANE " >> South Lane >> "   /* faixa de baixo */
 
 /* Mão dupla — faixa sentido Norte (subindo) */
-#define FAIXA_NORTE     " ^^ Faixa Norte ^^ "
+#define NORTH_LANE      " ^^ North Lane ^^ "
 
 /* Mão dupla — faixa sentido Sul (descendo) */
-#define FAIXA_SUL       " vv Faixa Sul   vv "
+#define SOUTH_LANE      " vv South Lane   vv "
 
 
 /*
@@ -69,7 +69,7 @@
  *        │[G]│ v │
  *        │   │   │
  */
-#define SEMAFORO_V_ABERTO_H_FECHADO \
+#define TRAFFIC_LIGHT_V_OPEN_H_CLOSED \
     "       |   |   |\n" \
     "       | ^ | v |\n" \
     " ------+   +---+------\n" \
@@ -93,7 +93,7 @@
  *        │[R]│ v │
  *        │   │   │
  */
-#define SEMAFORO_H_ABERTO_V_FECHADO \
+#define TRAFFIC_LIGHT_H_OPEN_V_CLOSED \
     "       |   |   |\n" \
     "       | ^ | v |\n" \
     " ------+   +---+------\n" \
@@ -114,7 +114,7 @@
  *    | C |
  *    \___/
  */
-#define CARRO_NORTE \
+#define CAR_NORTH \
     " /---\\\n" \
     " | C |\n" \
     " \\___/"
@@ -124,7 +124,7 @@
  *    | C |
  *    \---/
  */
-#define CARRO_SUL \
+#define CAR_SOUTH \
     " /___\\\n" \
     " | C |\n" \
     " \\---/"
@@ -134,7 +134,7 @@
  *    |C C C >
  *    +------+
  */
-#define CARRO_LESTE \
+#define CAR_EAST \
     " +------+\n" \
     " |C C C >\n" \
     " +------+"
@@ -144,7 +144,7 @@
  *    < C C C|
  *    +------+
  */
-#define CARRO_OESTE \
+#define CAR_WEST \
     " +------+\n" \
     " < C C C|\n" \
     " +------+"
@@ -160,7 +160,7 @@
  *    | A |
  *    \___/
  */
-#define AMBULANCIA_NORTE \
+#define AMBULANCE_NORTH \
     " /###\\\n" \
     " |[+]|\n" \
     " | A |\n" \
@@ -172,7 +172,7 @@
  *    |[+]|
  *    \###/
  */
-#define AMBULANCIA_SUL \
+#define AMBULANCE_SOUTH \
     " /___\\\n" \
     " | A |\n" \
     " |[+]|\n" \
@@ -183,7 +183,7 @@
  *    |A  [+]  >
  *    +--------+
  */
-#define AMBULANCIA_LESTE \
+#define AMBULANCE_EAST \
     " +--------+\n" \
     " |A  [+]  >\n" \
     " +--------+"
@@ -193,7 +193,7 @@
  *    <  [+]  A|
  *    +--------+
  */
-#define AMBULANCIA_OESTE \
+#define AMBULANCE_WEST \
     " +--------+\n" \
     " <  [+]  A|\n" \
     " +--------+"
@@ -213,9 +213,9 @@
  *  | ### ### ### ### ###           |
  *  +-------------------------------+
  */
-#define EDIFICIO \
+#define BUILDING \
     " +-------------------------------+\n" \
-    " | [Edificio Empresarial]        |\n" \
+    " | [Business Building]           |\n" \
     " | ### ### ### ### ###           |\n" \
     " | # # # # # # # # # #          |\n" \
     " | ### ### ### ### ###           |\n" \
@@ -230,7 +230,7 @@
  *  |  | H  |       | |  | H  |       |
  *  +---------------+ +---------------+
  */
-#define ZONA_RESIDENCIAL \
+#define RESIDENTIAL_ZONE \
     " +---------------+ +---------------+\n" \
     " |   _/\\_        | |   _/\\_        |\n" \
     " |  /____\\       | |  /____\\       |\n" \
@@ -246,10 +246,10 @@
  *  |    T   T   T                    |
  *  +---------------------------------+
  */
-#define PARQUE_URBANO \
+#define URBAN_PARK \
     " +---------------------------------+\n" \
-    " | [PARQUE URBANO]  ### Pista      |\n" \
-    " |  T   T   T       ### Caminhada  |\n" \
+    " | [URBAN PARK]     ### Track      |\n" \
+    " |  T   T   T       ### Walkway    |\n" \
     " |    T   T   T                    |\n" \
     " +---------------------------------+"
 
@@ -261,7 +261,7 @@
  *  |    T   T   T   T   T   T     |
  *  +-------------------------------+
  */
-#define BOSQUE \
+#define WOODS \
     " +-------------------------------+\n" \
     " |  T   T   T   T   T   T       |\n" \
     " |    T   T   T   T   T   T     |\n" \
@@ -364,17 +364,17 @@
  * 8. Legenda
  */
 
-#define LEGENDA \
+#define LEGEND \
     "+----------------------------------------------------------+\n" \
-    "| Simbolo  | Significado        | Funcao Logica            |\n" \
+    "| Symbol   | Meaning            | Logical Function         |\n" \
     "+----------+--------------------+--------------------------+\n" \
-    "| ### / _H_| Fachadas / Casas   | Barreira fisica.         |\n" \
-    "| ###      | Faixa de Seguranca | Travessia de pedestres.  |\n" \
-    "| ^ v < >  | Setas de Fluxo     | Sentido obrigatorio.     |\n" \
-    "| [R]      | Semaforo Vermelho  | Veiculos param e dormem. |\n" \
-    "| [G]      | Semaforo Verde     | Fluxo livre.             |\n" \
-    "| /---\\    | Carro Comum  (C)   | Respeita semaforos.      |\n" \
-    "| /###\\    | Ambulancia   (A)   | Prioridade nos sinais.   |\n" \
+    "| ### / _H_| Facades / Houses   | Physical barrier.        |\n" \
+    "| ###      | Safety Lane        | Pedestrian crossing.     |\n" \
+    "| ^ v < >  | Flow Arrows        | Mandatory direction.     |\n" \
+    "| [R]      | Red Traffic Light  | Vehicles stop and sleep. |\n" \
+    "| [G]      | Green Traffic Light| Free flow.               |\n" \
+    "| /---\\    | Common Car   (C)   | Respects lights.         |\n" \
+    "| /###\\    | Ambulance    (A)   | Signal priority.         |\n" \
     "+----------------------------------------------------------+"
 
 
@@ -382,14 +382,14 @@
  * 9. Identificadores De Veículos Na Grade
  */
 
-#define ID_CARRO        'C'
-#define ID_AMBULANCIA   'A'
-#define ID_VAZIO        ' '
-#define ID_PAREDE       '#'
-#define ID_RUA          '.'
-#define ID_CRUZAMENTO   '+'
-#define ID_SEM_VERDE    'G'
-#define ID_SEM_VERM     'R'
+#define ID_CAR          'C'
+#define ID_AMBULANCE    'A'
+#define ID_EMPTY        ' '
+#define ID_WALL         '#'
+#define ID_ROAD         '.'
+#define ID_INTERSECTION '+'
+#define ID_GREEN_LIGHT  'G'
+#define ID_RED_LIGHT    'R'
 
 
 #endif /* ELEMENTS_ASCII_H */

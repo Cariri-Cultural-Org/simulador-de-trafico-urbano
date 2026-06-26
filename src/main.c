@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "veiculo.h"
-#include "models/Relogio_global.h"
-#include "models/Semaforo.h"
+#include "vehicle_thread.h"
+#include "models/GlobalClock.h"
+#include "models/TrafficLight.h"
 
 // Inclusões para gerenciar a thread inicial na main (dependente do SO)
 #ifdef _WIN32
@@ -13,34 +13,34 @@
 
 int main()
 {
-    printf("--- Iniciando o Simulador de Trafico Urbano ---\n");
+    printf("--- Starting the Urban Traffic Simulator ---\n");
 
     // 1. Inicializa o relógio global
-    init_relogio();
+    init_global_clock();
 
     // 2. Inicializa um semáforo de teste
-    Semaforo sem1;
-    // Semáforo ID 1 | 3 ticks no VERDE | 3 ticks no VERMELHO
-    init_semaforo(&sem1, 1, 3, 3);
+    TrafficLight traffic_light;
+    // Semáforo ID 1 | 3 ticks no GREEN | 3 ticks no RED
+    init_traffic_light(&traffic_light, 1, 3, 3);
 
     // 3. Cria e inicia a thread do relógio
     os_thread_t thread_id;
 
 #ifdef _WIN32
-    thread_id = CreateThread(NULL, 0, thread_relogio, NULL, 0, NULL);
+    thread_id = CreateThread(NULL, 0, thread_global_clock, NULL, 0, NULL);
 #else
-    pthread_create(&thread_id, NULL, thread_relogio, NULL);
+    pthread_create(&thread_id, NULL, thread_global_clock, NULL);
 #endif
 
     // 4. Exemplo de veículo com thread própria
-    Posicao rota_teste[] = {{0, 1}, {0, 2}, {0, 3}};
-    Veiculo veiculo_teste;
-    veiculo_init(&veiculo_teste, 1, TIPO_CARRO,
-                 (Posicao){0, 0}, DIR_LESTE,
-                 VEL_RAPIDO, rota_teste, 3);
+    Position test_route[] = {{0, 1}, {0, 2}, {0, 3}};
+    ThreadVehicle test_vehicle;
+    thread_vehicle_init(&test_vehicle, 1, VEHICLE_TYPE_CAR,
+                        (Position){0, 0}, DIRECTION_EAST,
+                        SPEED_FAST, test_route, 3);
 
-    if (veiculo_iniciar(&veiculo_teste) != 0) {
-        fprintf(stderr, "Falha ao iniciar a thread do veículo.\n");
+    if (thread_vehicle_start(&test_vehicle) != 0) {
+        fprintf(stderr, "Failed to start the vehicle thread.\n");
     }
 
     // Loop principal da simulação para fins de teste
@@ -48,19 +48,19 @@ int main()
     for (int i = 1; i <= 10; i++)
     {
         // Pausa a thread principal até o relógio "bater" o próximo tick
-        esperar_proximo_tick(global_tick);
+        wait_next_tick(global_tick);
 
         // Assim que o tick vira, atualizamos o semáforo
-        atualizar_semaforo(&sem1);
+        update_traffic_light(&traffic_light);
 
         // Imprime o estado atual
-        printf("[Tick: %02d] Semaforo %d esta: %s\n",
+        printf("[Tick: %02d] Traffic light %d is: %s\n",
                global_tick,
-               sem1.id,
-               sem1.estado == VERDE ? "VERDE" : "VERMELHO");
+               traffic_light.id,
+               traffic_light.state == GREEN ? "GREEN" : "RED");
     }
 
-    printf("\nEncerrando a simulacao...\n");
+    printf("\nStopping the simulation...\n");
 
     // 4. Sinaliza para a thread do relógio parar
     simulation_running = false;
@@ -74,12 +74,12 @@ int main()
 #endif
 
     // 6. Aguarda a thread do veículo finalizar
-    veiculo_aguardar(&veiculo_teste);
+    thread_vehicle_join(&test_vehicle);
 
     // 7. Limpa os recursos da memória
-    destroy_semaforo(&sem1);
-    destroy_relogio();
+    destroy_traffic_light(&traffic_light);
+    destroy_global_clock();
 
-    printf("Limpeza concluida. Saindo do simulador.\n");
+    printf("Cleanup completed. Exiting the simulator.\n");
     return 0;
 }

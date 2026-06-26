@@ -1,5 +1,5 @@
-#ifndef RELOGIO_GLOBAL_H
-#define RELOGIO_GLOBAL_H
+#ifndef GLOBAL_CLOCK_H
+#define GLOBAL_CLOCK_H
 
 #include <stdbool.h>
 
@@ -23,19 +23,19 @@ extern os_cond_t clock_cond;
 extern bool simulation_running;
 
 // Inicializa as estruturas do relogio
-void init_relogio();
+void init_global_clock(void);
 
 // Funcao da thread que ira gerenciar o relogio global
 #ifdef _WIN32
-DWORD WINAPI thread_relogio(LPVOID arg);
+DWORD WINAPI thread_global_clock(LPVOID arg);
 #else
-void* thread_relogio(void* arg);
+void *thread_global_clock(void *arg);
 #endif
 
 // Funcao para uma thread aguardar ate o proximo tick
-void esperar_proximo_tick(int tick_atual);
+void wait_next_tick(int current_tick);
 
 // Limpa recursos do relogio
-void destroy_relogio();
+void destroy_global_clock(void);
 
-#endif // RELOGIO_GLOBAL_H
+#endif // GLOBAL_CLOCK_H

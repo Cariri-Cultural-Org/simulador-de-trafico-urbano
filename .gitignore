@@ -15,3 +15,5 @@
 # Arquivos temporários e do VS Code
 .vscode/
 *.log
+.agents
+.codex

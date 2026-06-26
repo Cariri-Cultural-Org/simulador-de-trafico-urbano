@@ -1,11 +1,11 @@
-#include "Relogio_global.h"
+#include "GlobalClock.h"
 
 int global_tick = 0;
 os_mutex_t clock_mutex;
 os_cond_t clock_cond;
 bool simulation_running = true;
 
-void init_relogio()
+void init_global_clock(void)
 {
     global_tick = 0;
     simulation_running = true;
@@ -19,15 +19,14 @@ void init_relogio()
 }
 
 #ifdef _WIN32
-DWORD WINAPI thread_relogio(LPVOID arg)
+DWORD WINAPI thread_global_clock(LPVOID arg)
 {
 #else
-void *thread_relogio(void *arg)
+void *thread_global_clock(void *arg)
 {
 #endif
-#ifdef _WIN32
     (void)arg; // suppress warning
-#endif
+
     while (simulation_running)
     {
         // Pausa simulando a passagem de tempo de 1 tick (ex: 100ms)
@@ -52,13 +51,13 @@ void *thread_relogio(void *arg)
     return 0;
 }
 
-void esperar_proximo_tick(int tick_atual)
+void wait_next_tick(int current_tick)
 {
 #ifdef _WIN32
     while (simulation_running)
     {
         EnterCriticalSection(&clock_mutex);
-        if (global_tick != tick_atual)
+        if (global_tick != current_tick)
         {
             LeaveCriticalSection(&clock_mutex);
             break;
@@ -69,7 +68,7 @@ void esperar_proximo_tick(int tick_atual)
 #else
     pthread_mutex_lock(&clock_mutex);
     // Variavel de condicao: dorme sem gastar CPU ate chegar o Broadcast do relogio
-    while (global_tick == tick_atual && simulation_running)
+    while (global_tick == current_tick && simulation_running)
     {
         pthread_cond_wait(&clock_cond, &clock_mutex);
     }
@@ -77,7 +76,7 @@ void esperar_proximo_tick(int tick_atual)
 #endif
 }
 
-void destroy_relogio()
+void destroy_global_clock(void)
 {
 #ifdef _WIN32
     DeleteCriticalSection(&clock_mutex);

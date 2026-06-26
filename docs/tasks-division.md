@@ -1,261 +1,437 @@
-# 🚦 Simulador de Tráfego Urbano em C — Plano de Execução
+# Simulador de Tráfego Urbano em C — Plano de Implementação por MVP
 
 > **Equipe:** Alan · Diogo · Neto · Cícero
 >
-> **Janela revisada:** 23/06/2026 → 03/07/2026 (11 dias corridos)
+> **Janela revisada:** 26/06/2026 → 03/07/2026
 >
-> **Última atualização:** 24/06/2026
+> **Última atualização:** 26/06/2026
 >
-> **Disciplina:** Sistemas Operacionais — Concorrência, Sincronização e Deadlocks
+> **Objetivo da revisão:** reduzir dependências entre tarefas e chegar cedo a um executável visual, mesmo que simples.
 
 ---
 
-## Objetivo da entrega
+## Diagnóstico do plano anterior
 
-Entregar uma simulação concorrente de tráfego urbano em C na qual:
+O plano anterior separava o trabalho por features finais:
 
-- cada veículo, incluindo a ambulância, execute em sua própria thread;
-- o relógio global coordene o avanço da simulação por ticks;
-- veículos respeitem vias, semáforos e limites do mapa;
-- nenhuma célula seja ocupada por mais de um veículo;
-- esperas usem mecanismos bloqueantes, sem espera ocupada;
-- a ambulância receba prioridade sem violar a segurança;
-- a execução seja observável por uma visualização ASCII no terminal.
+- Alan ficava com mapa, exclusão mútua e contratos de movimento;
+- Diogo ficava com veículos, rotas e movimento;
+- Neto ficava com relógio, semáforos e sincronização;
+- Cícero ficava com ambulância, visualização e relatório.
 
-## Definição de pronto
+Essa divisão parece organizada, mas cria dependências fortes:
 
-Uma tarefa só pode ser marcada como concluída quando:
+- Diogo só consegue validar veículos depois que a API de movimento e o mapa estiverem estáveis.
+- Cícero só consegue implementar ambulância depois que veículo, semáforo e prioridade estiverem integrados.
+- A visualização ficava tarde demais, então os models eram escritos sem feedback visual.
+- O `main.c` executava apenas um teste isolado de relógio/semáforo, não a simulação.
+- O build real em 26/06/2026 falhava em `Ambulance.c`, então a primeira etapa do MVP é preservar a compilação.
 
-1. o código compila sem erros com `make`;
-2. o comportamento foi integrado ao fluxo principal, não apenas implementado isoladamente;
-3. existe uma forma objetiva de validar o resultado;
-4. os recursos criados — threads, mutexes, condições e memória — são encerrados corretamente;
-5. a alteração foi revisada por pelo menos outro integrante.
-
-### Legenda
-
-- [x] Concluído e presente no repositório
-- [ ] Pendente ou ainda sem validação integrada
-- **P0:** bloqueia a simulação mínima
-- **P1:** necessário para a entrega completa
-- **P2:** acabamento, documentação ou melhoria
+O novo plano troca "donos de features finais" por "incrementos pequenos e demonstráveis". Cada tarefa deve terminar com algo que compila, roda e mostra algum comportamento.
 
 ---
 
-## Estado atual verificado — 24/06
+## Definição do MVP inicial
 
-| Área | Estado | Evidência atual | Próximo passo |
-|---|---|---|---|
-| Estruturas e mapa | Parcialmente integrado | `Celula`, `Via`, `Cruzamento` e `Mapa` existem; a malha possui 12 cruzamentos | Inicializar o mapa na `main` e validar vias de mão dupla |
-| Exclusão mútua | Implementada na base | Cada `Celula` possui mutex e operações de ocupação/liberação | Integrar ao movimento e testar disputa pela mesma célula |
-| Relógio global | Protótipo funcional | Thread, tick e variável de condição existem | Integrar veículos, cruzamentos e encerramento global |
-| Semáforos | Parcialmente implementados | Há estados em `Semaforo` e também em `Cruzamento` | Escolher um único modelo e remover duplicidade de responsabilidade |
-| Veículos | Não iniciado | Não há modelo nem thread de veículo | Implementar `Veiculo` e seu ciclo de vida |
-| Ambulância | Apenas suporte estrutural | `Cruzamento` possui campos de prioridade; símbolos ASCII existem | Implementar thread, solicitação e liberação da prioridade |
-| Visualização | Protótipo de símbolos | Elementos ASCII estão definidos em `Elementos.h` | Criar renderizador do mapa atualizado a cada tick |
-| Testes | Não iniciado | Não há suíte ou roteiro de testes | Criar testes de integração e checklist de execução |
-| Documentação | Em andamento | `README.md` já possui compilação e execução | Atualizar arquitetura, regras e limitações após a integração |
+O primeiro MVP não é a entrega completa. Ele é a menor simulação útil para a equipe enxergar o sistema funcionando.
 
----
+O MVP inicial está pronto quando:
 
-## Responsabilidades e tarefas
+1. `make` compila sem erros;
+2. `./bin/traffic-simulator` executa sem travar;
+3. o programa cria e destrói o mapa real;
+4. o terminal mostra frames ASCII com tick, ruas, cruzamentos e pelo menos um veículo;
+5. o veículo anda por uma via fixa usando células reais do mapa;
+6. a ocupação exclusiva de célula é respeitada;
+7. a simulação encerra sozinha depois de uma quantidade limitada de ticks;
+8. todos os recursos usados no MVP são encerrados corretamente.
 
-### 🔵 Alan — Mapa, exclusão mútua e integração
+Fica fora do MVP inicial:
 
-**Resultado esperado:** fornecer a infraestrutura compartilhada e garantir que todos os módulos operem sobre o mesmo estado da simulação.
+- ambulância com prioridade;
+- rotas complexas;
+- conversões aleatórias;
+- 10 a 20 veículos;
+- mão dupla com faixas independentes;
+- política final de semáforos;
+- relatório final.
 
-- [x] **P0** Criar o repositório e a estrutura inicial do projeto.
-- [x] **P0** Implementar `Celula`, `Via`, `Cruzamento` e `Mapa`.
-- [x] **P0** Criar malha com pelo menos oito cruzamentos e uma via de mão única.
-- [x] **P0** Criar mutex por célula e operações atômicas de ocupação/liberação.
-- [ ] **P0** Inicializar e destruir o mapa no fluxo principal.
-- [ ] **P0** Definir com Diogo a API única de movimento entre duas células.
-- [ ] **P0** Implementar e documentar a estratégia anti-deadlock.
-- [ ] **P1** Corrigir ou validar a representação das duas faixas em vias de mão dupla.
-- [ ] **P1** Coordenar a integração dos módulos sem sobrescrever mudanças de outras branches.
-- [ ] **P2** Finalizar o `README.md` com arquitetura, compilação, execução e limitações.
-
-**Critérios de aceite**
-
-- Duas threads não conseguem ocupar a mesma célula.
-- Uma tentativa de movimento nunca deixa o veículo em duas células.
-- O mapa é criado e destruído sem vazamentos ou mutexes pendentes.
-- A política de aquisição de recursos é única e conhecida por toda a equipe.
-
-### 🟢 Diogo — Veículos, rotas e movimento
-
-**Resultado esperado:** executar entre 10 e 20 veículos simultâneos, com movimento válido e bloqueante.
-
-- [ ] **P0** Definir `Veiculo` com ID, tipo, posição, direção, velocidade, rota e thread.
-- [ ] **P0** Implementar criação, execução, encerramento e `join` das threads.
-- [ ] **P0** Implementar movimento apenas para células adjacentes e válidas.
-- [ ] **P0** Integrar movimento às operações de ocupação/liberação de `Celula`.
-- [ ] **P0** Bloquear sem consumir CPU ao aguardar célula ou sinal.
-- [ ] **P1** Respeitar sentido da via, faixa e limites do mapa.
-- [ ] **P1** Implementar velocidades: rápido = 1 tick, médio = 2 ticks e lento = 4 ticks.
-- [ ] **P1** Criar entre 10 e 20 veículos com rotas reproduzíveis.
-- [ ] **P1** Impedir ultrapassagem em vias de mão única.
-- [ ] **P2** Produzir logs mínimos de criação, bloqueio, movimento e encerramento.
-
-**Critérios de aceite**
-
-- Nenhum veículo se teletransporta, sai do mapa ou ignora o sentido da via.
-- O veículo libera a célula anterior somente como parte de uma transição segura.
-- A diferença entre velocidades é observável pelo número de ticks.
-- Todos os veículos encerram e são aguardados pela thread principal.
-
-### 🔴 Neto — Relógio, sinais e sincronização
-
-**Resultado esperado:** manter uma única fonte de tempo e controlar cruzamentos sem corrida de dados ou espera ocupada.
-
-- [x] **P0** Implementar a thread do relógio global.
-- [x] **P0** Acordar threads a cada tick com variável de condição.
-- [x] **P0** Implementar um protótipo de alternância verde/vermelho.
-- [ ] **P0** Unificar o estado dos sinais entre `Semaforo` e `Cruzamento`.
-- [ ] **P0** Integrar a alternância de todos os cruzamentos ao relógio global.
-- [ ] **P0** Garantir espera bloqueante no vermelho com `pthread_cond_wait`.
-- [ ] **P0** Implementar transição segura, sem liberar fluxos conflitantes.
-- [ ] **P1** Definir o protocolo de prioridade usado pela ambulância.
-- [ ] **P1** Validar proteção de leitura e escrita do tick e dos sinais.
-- [ ] **P1** Garantir encerramento sem threads presas em variáveis de condição.
-
-**Critérios de aceite**
-
-- Existe apenas uma fonte de verdade para o estado de cada sinal.
-- Fluxos horizontal e vertical nunca ficam verdes ao mesmo tempo.
-- Threads bloqueadas são acordadas quando o sinal abre ou a simulação termina.
-- A execução termina sem deadlock e sem acesso concorrente desprotegido.
-
-### 🟡 Cícero — Ambulância, visualização e relatório
-
-**Resultado esperado:** tornar o estado concorrente observável e demonstrar prioridade segura da ambulância.
-
-- [x] **P1** Definir símbolos distintos para vias, cruzamentos, sinais, carros e ambulância.
-- [ ] **P0** Implementar a thread da ambulância usando a mesma API dos demais veículos.
-- [ ] **P0** Solicitar prioridade antes de entrar em um cruzamento.
-- [ ] **P0** Liberar a prioridade imediatamente após a passagem.
-- [ ] **P0** Garantir que a prioridade não viole a ocupação exclusiva de células.
-- [ ] **P1** Registrar solicitação, concessão e liberação da prioridade.
-- [ ] **P1** Implementar renderização ASCII do mapa completo.
-- [ ] **P1** Atualizar a tela a cada tick com saída sincronizada.
-- [ ] **P1** Evitar que logs concorrentes corrompam a visualização.
-- [ ] **P2** Escrever o relatório final com arquitetura, sincronização, testes e anti-deadlock.
-
-**Critérios de aceite**
-
-- A ambulância obtém sinal verde de modo seguro e não atravessa célula ocupada.
-- A prioridade não deixa o cruzamento permanentemente bloqueado.
-- Cada frame representa um estado consistente da simulação.
-- O relatório descreve o comportamento realmente implementado.
+Esses itens entram depois que existir uma base executável e observável.
 
 ---
 
-## Contratos de integração
+## Estado real do código em 26/06/2026
 
-Estas decisões devem ser fechadas antes da integração parcial de 26/06:
-
-| Contrato | Responsáveis | Decisão necessária |
+| Área | Estado real | Consequência para o plano |
 |---|---|---|
-| Movimento entre células | Alan + Diogo | Ordem de locks, condição de espera e atualização atômica da posição |
-| Tick global | Diogo + Neto | Como cada veículo detecta e consome exatamente o próximo tick |
-| Estado do cruzamento | Alan + Neto | Estrutura proprietária dos sinais e mutex que protege o estado |
-| Prioridade da ambulância | Neto + Cícero | Solicitação, confirmação, passagem e liberação |
-| Snapshot para renderização | Alan + Cícero | Como ler mapa e veículos sem exibir estado parcialmente atualizado |
-| Encerramento | Todos | Flag global, broadcasts finais, `join` e destruição dos recursos |
-
-### Estratégia anti-deadlock proposta
-
-Adotar uma regra única: a thread nunca deve aguardar sinal ou tick enquanto mantém o mutex de uma célula. Quando precisar adquirir mais de um recurso, deve usar uma ordem global e determinística — por exemplo, o índice linear `linha * MAPA_COLUNAS + coluna`.
-
-Antes de implementar outra estratégia, Alan e Diogo devem confirmar que o protocolo de movimento preserva simultaneamente:
-
-1. ocupação exclusiva;
-2. ausência de espera circular;
-3. ausência de espera ocupada;
-4. impossibilidade de o veículo desaparecer ou ocupar duas células.
+| Build | `make` deve compilar usando `src/models/Ambulance.c` alinhado com `road_has_intersection`, `vertical_road` e `horizontal_road` | Primeira tarefa é preservar a compilação |
+| `main.c` | roda apenas relógio + semáforo isolado por 10 ticks | Trocar para uma demo integrada com mapa e renderização |
+| Mapa | `CityMap`, `Cell`, `Road` e `Intersection` já existem | Usar isso como base do MVP |
+| Destruição de células | `cell_destroy(&city_map->cells[row][column])` deve destruir apenas o mutex, pois a célula pertence ao vetor da linha | Corrigir antes de confiar em criação/destruição repetida |
+| Cruzamentos | `CityMap` cria cruzamentos reais por ponteiro; `Road` guarda ponteiros para esses mesmos cruzamentos | Usar `CityMap.intersections` como fonte de verdade |
+| Semáforos | Existe `TrafficLight`, mas `Intersection` já possui `green_direction` e condições próprias | Para a simulação real, usar `Intersection` como fonte de verdade |
+| Veículos | `Vehicle` existe como struct inicial; ainda não há thread nem movimento comum | Implementar movimento mínimo antes de rotas |
+| Ambulância | `src/models/Ambulance.c` concentra o movimento especial, mas a prioridade ainda fica para etapa futura | Deixar fora do MVP inicial ou manter comportamento mínimo compilável |
+| Visualização | `Elements.h` tem símbolos, mas não existe renderizador integrado | Criar renderizador simples primeiro, antes de arte ASCII detalhada |
 
 ---
 
-## Cronograma de entrega
+## Contratos mínimos congelados
 
-### Fase 1 — Caminho crítico (23/06 → 26/06)
+Para reduzir bloqueios, os contratos abaixo devem ser mantidos pequenos até o MVP inicial funcionar.
+
+### Mapa (`CityMap`)
+
+- `CityMap *city_map_create(void)` cria a malha real.
+- `void city_map_destroy(CityMap *city_map)` destrói a malha sem invalid free ou vazamento óbvio.
+- `Cell *city_map_get_cell(const CityMap *city_map, int row, int column)` devolve uma célula real.
+- `Intersection *city_map_get_intersection(const CityMap *city_map, int row, int column)` é a forma oficial de descobrir se uma posição é cruzamento.
+
+### Célula (`Cell`)
+
+- `cell_try_occupy(c, v)` tenta ocupar sem bloquear indefinidamente.
+- `cell_release(c)` libera a célula atual.
+- No MVP, se a próxima célula estiver ocupada, o veículo fica parado e tenta de novo no próximo tick.
+- Nenhuma thread deve dormir aguardando tick ou sinal segurando mutex de célula.
+
+### Veículo (`Vehicle`)
+
+- No MVP, um veículo anda somente dentro de uma `Road`.
+- A posição é `current_road + road_cell_index`.
+- Movimento mínimo: `index + 1`, com parada no fim ou retorno ao início da via.
+- Velocidade, conversão, sentido real da mão dupla e rota complexa entram depois.
+
+### Relógio (`GlobalClock`)
+
+- O tick global continua sendo a unidade de tempo da simulação.
+- Threads podem esperar com `wait_next_tick(current_tick)`.
+- O encerramento precisa acordar qualquer thread bloqueada.
+
+### Visualização
+
+- O renderizador lê o `CityMap` e as `Cell`.
+- Uma célula ocupada por veículo comum pode ser exibida como `C`.
+- Uma célula ocupada por ambulância pode ser exibida como `A` depois do MVP.
+- No MVP, o renderer pode usar caracteres simples: espaço, `-`, `|`, `+`, `C`.
+
+---
+
+## Estratégia de implementação
+
+A ordem abaixo evita que uma pessoa dependa da feature completa da outra.
+
+1. Recuperar build e ciclo de vida do mapa.
+2. Mostrar mapa estático no terminal.
+3. Fazer um veículo comum andar em uma via fixa.
+4. Ligar o movimento ao tick global.
+5. Colocar mais de um veículo disputando células.
+6. Alternar sinais dos cruzamentos.
+7. Fazer veículos respeitarem cruzamento.
+8. Adicionar ambulância como especialização de veículo.
+9. Refinar rotas, velocidade, mão dupla, logs e relatório.
+
+Enquanto as etapas 1 a 4 não estiverem prontas, nenhuma feature avançada deve ser tratada como P0.
+
+---
+
+## Tabela simples de responsabilidades e dependências
+
+Esta tabela parte do que já existe no repositório em 26/06/2026 e mostra a menor próxima entrega útil de cada integrante.
+
+| Integrante | Parte já implementada que deve aproveitar | Próximo foco | Depende de quem | Desbloqueia quem |
+|---|---|---|---|---|
+| Alan | `CityMap`, `Cell`, `Road` e `Intersection` já existem parcialmente; células já têm mutex e ocupação/liberação | Fazer o projeto voltar a compilar, corrigir destruição de células/cruzamentos e iniciar/destruir o mapa real em `main.c` | Não depende de ninguém para começar | Diogo consegue mover veículo em mapa real; Cícero consegue renderizar estado real; Neto consegue alternar cruzamentos reais |
+| Diogo | `Vehicle` já existe como struct inicial, mas sem thread nem movimento | Posicionar um veículo em uma `Road` existente e implementar movimento mínimo de uma célula por tick | Depende de Alan para build e mapa real compilando; depois depende de Neto para usar tick em thread | Cícero consegue mostrar `C` andando; Neto consegue validar espera por sinal com veículo real |
+| Neto | `GlobalClock` já acorda threads por tick; `TrafficLight` existe como protótipo isolado; `Intersection` já tem `green_direction` | Garantir encerramento limpo do relógio e fazer os cruzamentos reais alternarem sinal | Depende de Alan para usar `CityMap.intersections` como fonte real | Diogo consegue fazer veículo esperar no vermelho; Cícero consegue mostrar sinais e depois prioridade |
+| Cícero | `Elements.h` já tem símbolos ASCII; `Ambulance.c` existe como base compilável para movimento especial | Criar renderizador ASCII simples primeiro; deixar ambulância para depois do veículo comum funcionando | Para renderizar mapa vazio, depende só de Alan; para mostrar veículo, depende de Diogo; para sinais, depende de Neto | Todos ganham feedback visual cedo; depois a ambulância pode ser implementada sobre a mesma API do veículo |
+
+Resumo das dependências críticas:
+
+- Diogo não deve esperar ambulância, semáforo final ou rotas completas; ele só precisa de Alan entregar build + mapa real.
+- Cícero não deve começar pela ambulância; ele pode entregar visualização do mapa assim que Alan estabilizar o mapa.
+- Neto não precisa esperar veículos para estabilizar relógio e encerramento, mas precisa do mapa real para alternar cruzamentos integrados.
+- Ambulância depende de três coisas prontas: movimento comum de Diogo, cruzamento/sinal de Neto e visualização de Cícero.
+
+---
+
+## Tarefas por incremento
+
+### Incremento 0 — Build compilando e mapa visível
+
+**Meta:** até o fim de 26/06/2026, `make` e `./bin/traffic-simulator` devem funcionar e mostrar um mapa estático ou quase estático.
+
+| ID | Responsável | Tarefa | Não depende de | Critério de aceite |
+|---|---|---|---|---|
+| M0-A | Alan | Corrigir ciclo de vida de `Cell` e `Intersection` para o mapa criar/destruir sem invalid free | Veículos, semáforos, renderer | Rodar `city_map_create()` + `city_map_destroy()` no fluxo principal sem crash |
+| M0-B | Alan | Recuperar compilação do projeto, adaptando ou neutralizando temporariamente `Ambulance.c` | Prioridade da ambulância | `make` termina com sucesso |
+| M0-C | Alan | Alterar `main.c` para criar o `CityMap` real e destruir no final | Veículos prontos | `./bin/traffic-simulator` imprime pelo menos dimensões e quantidade de vias/cruzamentos |
+| M0-D | Cícero | Criar renderizador ASCII simples do mapa | Ambulância, semáforo real | O terminal mostra 20 linhas por frame, com ruas e cruzamentos reconhecíveis |
+| M0-E | Neto | Garantir que o relógio tenha encerramento limpo e acorde esperas no fim | Veículos reais | Uma thread de teste espera ticks e termina quando a simulação acaba |
+| M0-F | Diogo | Criar função de posicionamento inicial de um `Vehicle` em uma `Road` existente | Renderer, semáforo | Uma célula real fica ocupada por um veículo e aparece como ocupada no debug |
+
+**Demo esperada ao fim do incremento:**
+
+```text
+Tick 0
+        |       |       |       |
+--------+-------+-------+-------+-------
+        |       |       |       |
+...
+```
+
+Se o movimento ainda não estiver pronto, o mapa estático já vale como MVP técnico porque prova que o projeto compila, inicializa o estado compartilhado e tem uma saída observável.
+
+### Incremento 1 — Um veículo se move
+
+**Meta:** em 27/06/2026, um veículo comum deve andar por uma via fixa, primeiro sem semáforo.
+
+| ID | Responsável | Tarefa | Não depende de | Critério de aceite |
+|---|---|---|---|---|
+| V1-A | Diogo | Implementar `vehicle_advance_one_step()` usando `road_get_cell`, `cell_try_occupy` e `cell_release` | Semáforo, ambulância, rotas | O veículo sai da célula N e ocupa N+1 sem duplicar posição |
+| V1-B | Diogo | Se a próxima célula estiver ocupada, manter o veículo parado | Semáforo, prioridade | O veículo não sobrescreve outro ocupante |
+| V1-C | Cícero | Exibir célula ocupada como `C` no renderer | Thread de veículo | A posição do veículo é visível no frame |
+| V1-D | Neto | Fazer o loop principal esperar ticks para atualizar/renderizar | Vários veículos | Cada frame corresponde a um tick |
+| V1-E | Alan | Revisar invariantes de ocupação de célula | Rotas completas | Não existe frame em que o mesmo veículo apareça em duas células |
+
+**Demo esperada:**
+
+```text
+Tick 1
+----C---+-------+-------+-------
+
+Tick 2
+-----C--+-------+-------+-------
+```
+
+### Incremento 2 — Veículo em thread e disputa simples
+
+**Meta:** em 28/06/2026, veículos devem executar em threads e disputar células de forma segura.
+
+| ID | Responsável | Tarefa | Não depende de | Critério de aceite |
+|---|---|---|---|---|
+| T2-A | Diogo | Transformar o loop do veículo em thread própria | Semáforo | Uma thread por veículo avança com base no tick |
+| T2-B | Neto | Padronizar encerramento: flag global, broadcast final e `join` | Ambulância | Nenhuma thread fica presa ao finalizar |
+| T2-C | Alan | Criar cenário com dois veículos na mesma via | Cruzamentos | O veículo de trás bloqueia ou espera sem ocupar a célula do da frente |
+| T2-D | Cícero | Sincronizar impressão para não misturar logs e frames | Ambulância | Frames aparecem inteiros, sem linhas intercaladas |
+
+**Demo esperada:**
+
+```text
+Tick 8
+--------C-C-----+-------+-------
+```
+
+O objetivo não é realismo. O objetivo é provar concorrência, ocupação exclusiva e visualização.
+
+### Incremento 3 — Cruzamentos (`Intersection`) e semáforos reais
+
+**Meta:** em 29/06/2026, cruzamentos devem alternar direção liberada e veículos devem respeitar o sinal.
+
+| ID | Responsável | Tarefa | Não depende de | Critério de aceite |
+|---|---|---|---|---|
+| S3-A | Neto | Usar `Intersection.green_direction` como fonte de verdade da simulação | `TrafficLight` isolado | Horizontal e vertical não ficam verdes ao mesmo tempo |
+| S3-B | Neto | Alternar todos os cruzamentos a cada N ticks | Ambulância | O estado muda de forma visível no terminal ou logs |
+| S3-C | Diogo | Antes de entrar em cruzamento, consultar `city_map_get_intersection()` | Ambulância | Veículo para no vermelho e anda no verde |
+| S3-D | Alan | Garantir que espera por sinal não segura mutex de célula | Ambulância | Não há espera circular óbvia entre célula e cruzamento |
+| S3-E | Cícero | Mostrar sinal horizontal/vertical no renderer com marcador simples | Arte final | É possível entender visualmente qual direção está liberada |
+
+**Decisão importante:** `TrafficLight` pode continuar existindo como módulo didático, mas a simulação integrada deve usar o estado do `Intersection`. Ter duas fontes de verdade aumenta o risco de inconsistência.
+
+### Incremento 4 — Ambulância mínima
+
+**Meta:** em 30/06/2026, a ambulância deve existir como veículo especial visível, ainda com prioridade simples.
+
+| ID | Responsável | Tarefa | Não depende de | Critério de aceite |
+|---|---|---|---|---|
+| A4-A | Cícero | Reimplementar ambulância sobre a mesma API do veículo comum | Rotas complexas | Ambulância compila, anda e aparece como `A` |
+| A4-B | Neto | Criar protocolo simples de prioridade no cruzamento | Rotas complexas | Quando a ambulância chega, a direção dela é liberada sem abrir fluxos conflitantes |
+| A4-C | Diogo | Garantir que a ambulância continue respeitando célula ocupada | Prioridade avançada | Ambulância não atravessa outro veículo |
+| A4-D | Alan | Revisar liberação da prioridade e destruição de recursos | Relatório | O cruzamento volta ao ciclo normal depois da passagem |
+
+Prioridade da ambulância não deve ser implementada antes de veículo comum + cruzamento estarem funcionando. Caso contrário, a equipe volta ao problema de escrever código abstrato sem conseguir executar.
+
+### Incremento 5 — Entrega completa
+
+**Meta:** entre 01/07/2026 e 03/07/2026, evoluir o MVP para os critérios da disciplina.
+
+| ID | Responsável | Tarefa | Critério de aceite |
+|---|---|---|---|
+| F5-A | Diogo | Criar 10 a 20 veículos com rotas reproduzíveis | Simulação roda por tempo prolongado sem sair do mapa |
+| F5-B | Diogo | Implementar velocidades 1, 2 e 4 ticks | Diferença de velocidade é visível |
+| F5-C | Alan | Refinar mão única, mão dupla e limites de via | Veículos não trafegam em sentido inválido |
+| F5-D | Neto | Fortalecer espera bloqueante e broadcasts de encerramento | Encerramento não deixa threads presas |
+| F5-E | Cícero | Melhorar visualização e separar logs de frames | Saída fica legível para demonstração |
+| F5-F | Todos | Testes de concorrência e execução prolongada | Sem deadlock em cenários repetidos |
+| F5-G | Cícero | Relatório final baseado no comportamento real | Documento descreve o que foi entregue, não só o planejado |
+| F5-H | Alan | Atualizar README com arquitetura final e limitações | README bate com o código executável |
+
+---
+
+## Nova divisão de responsabilidades
+
+### Alan — Núcleo executável e invariantes do mapa
+
+Alan não deve ser gargalo da API de movimento. A responsabilidade principal passa a ser garantir que o estado compartilhado seja confiável.
+
+Tarefas principais:
+
+- manter `CityMap`, `Cell`, `Road` e `Intersection` compilando juntos;
+- corrigir criação/destruição de recursos;
+- garantir ocupação exclusiva de célula;
+- revisar a ordem de locks;
+- manter `main.c` sempre executável;
+- validar que nenhuma mudança quebra o MVP.
+
+Entregas visíveis:
+
+- mapa inicializado e destruído no executável;
+- cenário mínimo com células ocupadas;
+- checklist de invariantes de concorrência.
+
+### Diogo — Movimento mínimo evolutivo
+
+Diogo não deve esperar uma API sofisticada de rotas. Ele pode começar com o contrato atual de `Road` e `Cell`.
+
+Tarefas principais:
+
+- posicionar veículo em uma via existente;
+- mover de índice em índice;
+- não sobrescrever célula ocupada;
+- transformar o movimento em thread;
+- depois adicionar velocidades, sentido e rotas.
+
+Entregas visíveis:
+
+- um `C` andando no mapa;
+- dois veículos disputando uma via;
+- logs mínimos de bloqueio/movimento quando necessário.
+
+### Neto — Tempo, encerramento e sinais
+
+Neto pode evoluir relógio e cruzamentos sem depender de veículos completos.
+
+Tarefas principais:
+
+- manter o tick global como fonte de tempo;
+- garantir encerramento limpo;
+- alternar cruzamentos;
+- acordar threads bloqueadas em sinal;
+- impedir estados conflitantes de semáforo.
+
+Entregas visíveis:
+
+- ticks avançando no frame;
+- cruzamentos alternando estado;
+- threads encerrando sem travar.
+
+### Cícero — Observabilidade primeiro, ambulância depois
+
+Cícero não deve começar pela ambulância avançada. A primeira contribuição precisa reduzir a abstração para todo mundo.
+
+Tarefas principais:
+
+- criar renderização ASCII simples;
+- mostrar veículos e sinais;
+- sincronizar saída no terminal;
+- depois implementar ambulância sobre a API comum;
+- documentar o comportamento real.
+
+Entregas visíveis:
+
+- frames legíveis desde o começo;
+- ambulância aparecendo como `A` quando a base estiver pronta;
+- relatório coerente com a execução.
+
+---
+
+## Regras para manter tarefas desconexas
+
+1. Toda tarefa P0 deve ter uma forma de execução local.
+2. Nenhum model novo conta como concluído se não for chamado por `main.c`, por uma demo ou por um teste simples.
+3. Branches não devem depender de código não mergeado de outra pessoa.
+4. Quando uma tarefa precisar de outra feature, criar um stub pequeno ou usar o contrato mínimo existente.
+5. O executável principal deve continuar compilando durante todo o projeto.
+6. Features avançadas entram atrás do MVP, não na frente dele.
+7. A visualização deve evoluir junto com o comportamento, não no fim.
+8. Antes de mudar uma struct compartilhada, listar quais arquivos serão afetados.
+9. Se uma mudança quebrar `make`, ela deve ser corrigida antes de qualquer nova feature.
+10. O relatório deve acompanhar as decisões reais tomadas durante a implementação.
+
+---
+
+## Cronograma revisado
 
 | Data | Marco verificável |
 |---|---|
-| **Ter 23/06** | Estruturas, mapa, relógio e símbolos-base no repositório |
-| **Qua 24/06** | API de veículo definida; mapa inicializado; modelo único de semáforo decidido |
-| **Qui 25/06** | Um veículo percorre rota, espera sinal e disputa células sem busy-wait |
-| **Sex 26/06** | Integração parcial: múltiplos veículos + relógio + mapa + sinais |
+| **26/06/2026** | `make` volta a compilar; `./bin/traffic-simulator` cria mapa e mostra frame ASCII básico |
+| **27/06/2026** | Um veículo comum se move por uma via fixa e aparece no mapa |
+| **28/06/2026** | Dois ou mais veículos rodam em threads e disputam células sem ocupação dupla |
+| **29/06/2026** | Cruzamentos alternam sinal e veículos respeitam vermelho/verde |
+| **30/06/2026** | Ambulância mínima anda, aparece no mapa e solicita prioridade simples |
+| **01/07/2026** | 10 a 20 veículos, velocidades e cenários de concorrência em execução prolongada |
+| **02/07/2026** | Congelamento funcional; apenas correções críticas, visualização e documentação |
+| **03/07/2026** | Entrega do código, README, relatório e divisão final coerente com commits |
 
-### Fase 2 — Funcionalidades completas (27/06 → 30/06)
+---
 
-| Data | Marco verificável |
-|---|---|
-| **Sáb–Dom 27–28/06** | 10–20 veículos, velocidades, ambulância e visualização por tick |
-| **Seg 29/06** | Testes de concorrência, correção de deadlocks e revisão conjunta |
-| **Ter 30/06** | Código funcional congelado para testes finais; README e relatório em revisão |
+## Checklist de validação por tarefa
 
-### Fase 3 — Validação e entrega (01/07 → 03/07)
+Antes de marcar qualquer tarefa como concluída:
 
-| Data | Marco verificável |
-|---|---|
-| **Qua 01/07** | Regressão completa e execução prolongada sem travamentos |
-| **Qui 02/07** | Freeze: somente correções críticas e documentação |
-| **Sex 03/07** | Entrega do código, relatório e histórico do repositório |
+```bash
+make
+./bin/traffic-simulator
+```
+
+A tarefa só pode ser marcada como pronta se:
+
+- compila sem erro;
+- roda sem crash;
+- altera algo visível ou verificável;
+- não deixa threads presas;
+- não introduz espera ocupada;
+- não exige branch não mergeada de outro integrante;
+- tem critério de aceite demonstrável.
 
 ---
 
 ## Plano mínimo de testes
 
-| Cenário | Resultado esperado | Responsáveis |
+| Cenário | Resultado esperado | Quando entra |
 |---|---|---|
-| Dois veículos tentam ocupar a mesma célula | Apenas um avança; o outro bloqueia sem busy-wait | Alan + Diogo |
-| Veículo encontra sinal vermelho | Aguarda e avança somente após o verde | Diogo + Neto |
-| Fluxos opostos chegam ao cruzamento | Não há ocupação simultânea nem sinais conflitantes | Alan + Neto |
-| Ambulância solicita prioridade | Sinal muda de forma segura e volta ao ciclo normal | Neto + Cícero |
-| 10–20 veículos em execução prolongada | Sem deadlock, corrida visível ou saída do mapa | Todos |
-| Encerramento durante espera | Todas as threads acordam, terminam e recebem `join` | Todos |
-| Renderização concorrente | Frame sem linhas intercaladas ou estado inconsistente | Cícero + Alan |
-
-Ferramentas recomendadas para validação:
-
-- compilação com avisos: `-Wall -Wextra -Wpedantic`;
-- sanitizadores quando disponíveis: `-fsanitize=address,undefined`;
-- análise de concorrência no Linux: ThreadSanitizer ou Valgrind/Helgrind;
-- execuções repetidas e prolongadas, não apenas uma demonstração curta.
+| Criar e destruir mapa | Sem crash, sem invalid free evidente | Incremento 0 |
+| Renderizar mapa vazio | Frames mostram vias e cruzamentos | Incremento 0 |
+| Posicionar um veículo | Uma célula aparece ocupada | Incremento 0 |
+| Mover um veículo | `C` muda de posição a cada tick configurado | Incremento 1 |
+| Próxima célula ocupada | Veículo permanece parado sem sobrescrever ocupante | Incremento 1 |
+| Dois veículos em threads | Ambos avançam sem ocupar a mesma célula | Incremento 2 |
+| Encerramento durante espera | Todas as threads acordam e recebem `join` | Incremento 2 |
+| Cruzamento vermelho | Veículo espera antes de entrar | Incremento 3 |
+| Alternância de sinal | Apenas uma direção fica liberada por vez | Incremento 3 |
+| Ambulância com prioridade | Prioridade altera o sinal sem violar ocupação exclusiva | Incremento 4 |
+| Execução prolongada | Sem deadlock em várias execuções | Incremento 5 |
 
 ---
 
-## Entregáveis
+## Critérios finais da entrega
 
-| Entregável | Responsável principal | Critério de conclusão |
+| Critério | Responsável principal | Observação |
 |---|---|---|
-| Código-fonte em C | Todos | Compila e executa a simulação completa |
-| `README.md` | Alan | Instalação, compilação, execução, arquitetura e limitações |
-| Relatório de implementação | Cícero | Decisões reais, testes, resultados e divisão do trabalho |
-| Histórico Git | Alan | Commits identificáveis e integração preservada |
-| Divisão de responsabilidades | Cícero | Coerente com commits e relatório final |
-
-## Critérios de avaliação
-
-| Critério | Pontos | Responsável principal |
-|---|---:|---|
-| Corretude da simulação | 2,0 | Diogo + Alan |
-| Visualização ASCII | 2,0 | Cícero |
-| Exclusão mútua | 1,5 | Alan |
-| Sincronização de sinais | 1,5 | Neto |
-| Ambulância com prioridade | 1,0 | Cícero + Neto |
-| Ausência de deadlock | 2,0 | Alan + Neto |
-| **Total** | **10,0** | **Todos** |
+| Simulação executável | Todos | Mantida desde o MVP |
+| Visualização ASCII | Cícero | Começa simples e evolui |
+| Exclusão mútua por célula | Alan | Base de segurança do mapa |
+| Veículos em threads | Diogo | Começa com uma via fixa |
+| Relógio e sinais | Neto | Fonte única de tick e cruzamentos |
+| Ambulância | Cícero + Neto | Entra depois da base comum |
+| Ausência de deadlock | Alan + Neto | Validada por cenários repetidos |
+| README e relatório | Alan + Cícero | Devem descrever o comportamento real |
 
 ---
 
-## Regras de trabalho
+## Resumo da nova abordagem
 
-1. Nenhuma espera ocupada: usar variáveis de condição, mutexes ou semáforos bloqueantes.
-2. Cada branch deve tratar um escopo pequeno e integrável.
-3. Antes do merge, executar `make`, uma simulação curta e o cenário afetado.
-4. Mudanças em estruturas compartilhadas devem ser comunicadas aos consumidores do módulo.
-5. Commits devem indicar claramente a alteração, sem misturar refatoração não relacionada.
-6. Problemas de integração têm prioridade sobre novas funcionalidades após 29/06.
-7. O relatório e o README devem descrever o código entregue, não uma arquitetura planejada.
+O projeto deve parar de avançar por models isolados e passar a avançar por demonstrações pequenas.
+
+Primeiro, o simulador precisa compilar e mostrar o mapa. Depois, um veículo anda. Depois, vários veículos disputam células. Depois, sinais entram no caminho. Só então a ambulância recebe prioridade.
+
+Essa ordem reduz bloqueios entre integrantes e dá feedback imediato sobre se as structs, locks e regras estão corretas.
