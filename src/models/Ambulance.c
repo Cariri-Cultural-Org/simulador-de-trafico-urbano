@@ -6,6 +6,25 @@
 #include "CityMap.h"
 #include "Intersection.h"
 
+static int ambulance_place_initially(Vehicle *ambulance)
+{
+    while (simulation_running && ambulance->active)
+    {
+        if (vehicle_place_on_road(
+                ambulance,
+                ambulance->current_road,
+                ambulance->road_cell_index
+            ))
+        {
+            return 1;
+        }
+
+        wait_next_tick(global_tick);
+    }
+
+    return 0;
+}
+
 #ifdef _WIN32
 DWORD WINAPI thread_ambulance(LPVOID arg)
 #else
@@ -15,17 +34,10 @@ void *thread_ambulance(void *arg)
     Vehicle *ambulance = (Vehicle *)arg;
     CityMap *city_map = (CityMap *)ambulance->city_map;
 
-    // Tenta ocupar a célula inicial
-    Cell *start_cell = road_get_cell(ambulance->current_road, ambulance->road_cell_index);
-    if (start_cell != NULL)
-    {
-        while (!cell_try_occupy(start_cell, ambulance) && simulation_running && ambulance->active)
-        {
-            wait_next_tick(global_tick);
-        }
-        ambulance->row = start_cell->row;
-        ambulance->column = start_cell->column;
-    }
+    vehicle_set_render_symbol(ambulance, 'A');
+
+    if (!ambulance_place_initially(ambulance))
+        return 0;
 
     int last_tick = global_tick;
 
@@ -74,21 +86,9 @@ void *thread_ambulance(void *arg)
             }
         }
 
-        // Tenta ocupar a próxima célula
-        if (cell_try_occupy(next_cell, ambulance))
+        // Move usando a mesma estrutura base de Vehicle.
+        if (vehicle_try_move_to_road_index(ambulance, next_index))
         {
-            // Ocupou com sucesso! Libera a célula anterior
-            Cell *current_cell = road_get_cell(road, index);
-            if (current_cell != NULL)
-            {
-                cell_release(current_cell);
-            }
-
-            // Atualiza posição da ambulância
-            ambulance->road_cell_index = next_index;
-            ambulance->row = next_cell->row;
-            ambulance->column = next_cell->column;
-
             // Se a nova célula ocupada é um cruzamento, decide se vai virar
             if (next_is_intersection && intersection != NULL)
             {

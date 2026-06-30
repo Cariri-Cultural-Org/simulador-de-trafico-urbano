@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "SimulationOutput.h"
 #include "models/GlobalClock.h"
 #include "models/Intersection.h"
 #include "models/Vehicle.h"
@@ -64,6 +65,11 @@ static const char *direction_to_string(Direction direction)
 static const char *vehicle_type_to_string(VehicleType type)
 {
     return type == VEHICLE_TYPE_AMBULANCE ? "AMBULANCE" : "CAR";
+}
+
+static char vehicle_type_to_symbol(VehicleType type)
+{
+    return type == VEHICLE_TYPE_AMBULANCE ? 'A' : 'C';
 }
 
 static int positions_are_equal(Position a, Position b)
@@ -178,7 +184,11 @@ static int wait_signal_if_needed(ThreadVehicle *vehicle, Road *road, int destina
 
 static int occupy_real_cell(ThreadVehicle *vehicle, Cell *cell)
 {
-    return cell_try_occupy(cell, (struct Vehicle *)vehicle);
+    return cell_try_occupy_with_symbol(
+        cell,
+        (struct Vehicle *)vehicle,
+        vehicle_type_to_symbol(vehicle->type)
+    );
 }
 
 static int try_move_on_city_map(ThreadVehicle *vehicle, Position destination)
@@ -324,7 +334,7 @@ static void *vehicle_thread_run(void *arg)
 {
     ThreadVehicle *vehicle = (ThreadVehicle *)arg;
 
-    printf(
+    simulation_output_log(
         "[%s #%d] started at (%d,%d) speed=%d\n",
         vehicle_type_to_string(vehicle->type),
         vehicle->id,
@@ -348,7 +358,7 @@ static void *vehicle_thread_run(void *arg)
 
         if (try_move(vehicle))
         {
-            printf(
+            simulation_output_log(
                 "[%s #%d] moved to (%d,%d) [%s]\n",
                 vehicle_type_to_string(vehicle->type),
                 vehicle->id,
@@ -362,8 +372,8 @@ static void *vehicle_thread_run(void *arg)
     release_current_cell(vehicle);
     vehicle->state = VEHICLE_STATE_FINISHED;
 
-    printf("[%s #%d] route completed. Finishing thread.\n",
-           vehicle_type_to_string(vehicle->type), vehicle->id);
+    simulation_output_log("[%s #%d] route completed. Finishing thread.\n",
+                          vehicle_type_to_string(vehicle->type), vehicle->id);
 
     return NULL;
 }
@@ -407,8 +417,8 @@ int thread_vehicle_start(ThreadVehicle *vehicle)
 
     if (result != 0)
     {
-        fprintf(stderr, "[ERROR] pthread_create failed for vehicle #%d (code %d)\n",
-                vehicle->id, result);
+        simulation_output_log("[ERROR] pthread_create failed for vehicle #%d (code %d)\n",
+                              vehicle->id, result);
         return -1;
     }
 
@@ -424,8 +434,8 @@ int thread_vehicles_create_all(ThreadVehicle vehicles[], int quantity)
 {
     if (quantity < MIN_VEHICLES || quantity > MAX_VEHICLES)
     {
-        fprintf(stderr, "[ERROR] invalid quantity: %d (expected %d-%d)\n",
-                quantity, MIN_VEHICLES, MAX_VEHICLES);
+        simulation_output_log("[ERROR] invalid quantity: %d (expected %d-%d)\n",
+                              quantity, MIN_VEHICLES, MAX_VEHICLES);
         return -1;
     }
 

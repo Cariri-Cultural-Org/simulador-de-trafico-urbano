@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include "SimulationOutput.h"
+#include "models/Ambulance.h"
 #include "models/GlobalClock.h"
 #include "models/CityMap.h"
+#include "models/Vehicle.h"
 
 /* Inclusões de thread dependentes do SO */
 #ifdef _WIN32
@@ -29,29 +32,31 @@ static void *clock_test_thread(void *arg)
             break;
 
         observed_tick = global_tick;
-        printf("[Test] aguardou tick %d e seguiu vivo\n", observed_tick);
+        simulation_output_log("[Test] aguardou tick %d e seguiu vivo\n", observed_tick);
     }
 
-    printf("[Test] encerrando junto com o relogio global\n");
+    simulation_output_log("[Test] encerrando junto com o relogio global\n");
     return 0;
 }
 
 int main(void)
 {
-    printf("--- Starting the Urban Traffic Simulator ---\n");
+    simulation_output_init();
+    simulation_output_log("--- Starting the Urban Traffic Simulator ---\n");
 
     /* ── M0-C: Criar o CityMap real ─────────────────────────────────────── */
     CityMap *city_map = city_map_create();
     if (!city_map)
     {
-        fprintf(stderr, "ERRO: Falha ao criar o CityMap.\n");
+        simulation_output_log("ERRO: Falha ao criar o CityMap.\n");
+        simulation_output_destroy();
         return 1;
     }
 
-    printf("Mapa criado: %d linhas x %d colunas\n",
-           city_map->rows, city_map->columns);
-    printf("Vias: %d  |  Cruzamentos: %d\n",
-           city_map->road_count, city_map->intersection_count);
+    simulation_output_log("Mapa criado: %d linhas x %d colunas\n",
+                          city_map->rows, city_map->columns);
+    simulation_output_log("Vias: %d  |  Cruzamentos: %d\n",
+                          city_map->road_count, city_map->intersection_count);
 
     /* ── Inicializa o relógio global ────────────────────────────────────── */
     init_global_clock();
@@ -72,27 +77,43 @@ int main(void)
     pthread_create(&test_thread, NULL, clock_test_thread, NULL);
 #endif
 
+    Vehicle ambulance;
+    vehicle_init(&ambulance, 1, 1, city_map->roads[0], 0, city_map);
+    vehicle_set_render_symbol(&ambulance, 'A');
+
+    os_thread_t ambulance_thread;
+#ifdef _WIN32
+    ambulance_thread = CreateThread(NULL, 0, thread_ambulance, &ambulance, 0, NULL);
+#else
+    pthread_create(&ambulance_thread, NULL, thread_ambulance, &ambulance);
+#endif
+
     /* ── Loop de simulação (5 ticks de demonstração) ────────────────────── */
-    for (int i = 1; i <= 5; i++)
+    for (int i = 1; i <= 8; i++)
     {
         wait_next_tick(global_tick);
-        printf("[Tick: %02d] Simulador ativo — mapa %dx%d, %d cruzamentos\n",
-               global_tick,
-               city_map->rows, city_map->columns,
-               city_map->intersection_count);
+
+        if (!simulation_output_render_city_map(city_map, stdout, global_tick))
+        {
+            simulation_output_log("ERRO: Falha ao renderizar o mapa ASCII.\n");
+            break;
+        }
     }
 
-    printf("\nEncerrando simulação...\n");
+    simulation_output_log("Encerrando simulacao...\n");
 
     /* ── Finaliza o relógio ─────────────────────────────────────────────── */
     stop_global_clock();
 
 #ifdef _WIN32
+    WaitForSingleObject(ambulance_thread, INFINITE);
+    CloseHandle(ambulance_thread);
     WaitForSingleObject(test_thread, INFINITE);
     CloseHandle(test_thread);
     WaitForSingleObject(clock_thread, INFINITE);
     CloseHandle(clock_thread);
 #else
+    pthread_join(ambulance_thread, NULL);
     pthread_join(test_thread, NULL);
     pthread_join(clock_thread, NULL);
 #endif
@@ -103,6 +124,7 @@ int main(void)
     city_map_destroy(city_map);
     city_map = NULL;
 
-    printf("Cleanup concluído. Saindo do simulador.\n");
+    simulation_output_log("Cleanup concluido. Saindo do simulador.\n");
+    simulation_output_destroy();
     return 0;
 }

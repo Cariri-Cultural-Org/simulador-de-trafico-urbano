@@ -24,6 +24,7 @@ typedef struct Vehicle
     int row;
     int column;
     VehicleDirection direction;
+    char render_symbol;
     Road *route[VEHICLE_MAX_ROUTE_LENGTH];
     int route_length;
     int route_index;
@@ -42,6 +43,9 @@ void vehicle_init(
     void *city_map
 );
 int vehicle_place_on_road(Vehicle *vehicle, Road *road, int road_cell_index);
+int vehicle_try_move_to_road_index(Vehicle *vehicle, int road_cell_index);
+void vehicle_set_render_symbol(Vehicle *vehicle, char symbol);
+char vehicle_get_render_symbol(const Vehicle *vehicle);
 void vehicle_set_route(Vehicle *vehicle, Road **route, int route_length);
 
 #endif /* VEHICLE_H */

@@ -42,6 +42,7 @@ void vehicle_init(
     memset(vehicle, 0, sizeof(Vehicle));
     vehicle->id = id;
     vehicle->velocity = velocity;
+    vehicle->render_symbol = 'C';
     vehicle->active = 1;
     vehicle->city_map = city_map;
 
@@ -56,12 +57,50 @@ int vehicle_place_on_road(Vehicle *vehicle, Road *road, int road_cell_index)
     if (!vehicle || !cell)
         return 0;
 
-    if (!cell_try_occupy(cell, vehicle))
+    if (!cell_try_occupy_with_symbol(cell, vehicle, vehicle_get_render_symbol(vehicle)))
         return 0;
 
     vehicle_apply_road_position(vehicle, road, road_cell_index);
     vehicle->active = 1;
     return 1;
+}
+
+int vehicle_try_move_to_road_index(Vehicle *vehicle, int road_cell_index)
+{
+    Cell *current_cell;
+    Cell *next_cell;
+
+    if (!vehicle || !vehicle->current_road)
+        return 0;
+
+    current_cell = road_get_cell(vehicle->current_road, vehicle->road_cell_index);
+    next_cell = road_get_cell(vehicle->current_road, road_cell_index);
+
+    if (!current_cell || !next_cell)
+        return 0;
+
+    if (!cell_try_occupy_with_symbol(next_cell, vehicle, vehicle_get_render_symbol(vehicle)))
+        return 0;
+
+    cell_release(current_cell);
+    vehicle_apply_road_position(vehicle, vehicle->current_road, road_cell_index);
+    return 1;
+}
+
+void vehicle_set_render_symbol(Vehicle *vehicle, char symbol)
+{
+    if (!vehicle)
+        return;
+
+    vehicle->render_symbol = symbol ? symbol : 'C';
+}
+
+char vehicle_get_render_symbol(const Vehicle *vehicle)
+{
+    if (!vehicle || !vehicle->render_symbol)
+        return 'C';
+
+    return vehicle->render_symbol;
 }
 
 void vehicle_set_route(Vehicle *vehicle, Road **route, int route_length)
